@@ -1,0 +1,88 @@
+[
+    {
+        "start_date": "2020-11-21",
+        "end_date": "2020-12-24",
+        "lines": [
+            {
+                "text": "SAMPLE ANNOUNCEMENT",
+                "size": 120,
+                "color": "#ffffff",
+                "center": true
+            },
+            {
+                "hspace": 75
+            },
+            {
+                "text": "Name of Event",
+                "size": 90,
+                "color": "#ffff00",
+                "center": true
+            },
+            {
+                "text": "Event Date",
+                "size": 90,
+                "color": "#ffff00",
+                "center": true
+            },
+            {
+                "text": "Event Time",
+                "size": 90,
+                "color": "#ffff00",
+                "center": true
+            },
+            {
+                
+                "hspace": 75
+            },
+            {
+                "text": "More event details",
+                "size": 75,
+                "color": "#ffffff",
+                "center": true
+            }
+        ]
+    },
+    {
+        "start_date": "2020-11-21",
+        "end_date": "2020-12-24",
+        "lines": [
+            {
+                "text": "SECOND ANNOUNCEMENT",
+                "size": 120,
+                "color": "#ffffff",
+                "center": true
+            },
+            {
+                "hspace": 75
+            },
+            {
+                "text": "Another Event",
+                "size": 90,
+                "color": "#ffff00",
+                "center": true
+            },
+            {
+                "text": "Another Date",
+                "size": 90,
+                "color": "#ffff00",
+                "center": true
+            },
+            {
+                "text": "Another Time",
+                "size": 90,
+                "color": "#ffff00",
+                "center": true
+            },
+            {
+                
+                "hspace": 75
+            },
+            {
+                "text": "Other event details",
+                "size": 75,
+                "color": "#ffffff",
+                "center": true
+            }
+        ]
+    }
+]

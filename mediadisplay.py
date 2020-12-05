@@ -34,47 +34,33 @@ github.com/davidsmakerworks/media-display
 
 TODO: General cleanup
 
-TODO: Migrate to run inside windowing system for future integration with
-other projects
-
 TODO: Research native video playback without using omxplayer
 
-TODO: Migrate configuration and announcements to use JSON files
+TODO: Implement graceful shutdown
+
 """
 
-import os
 import sys
 import pygame
 import time as tm # Avoid conflict with datetime.time class
 import subprocess
 import random
 import glob
-import xml.etree.ElementTree as ET
-import configparser
+import json
 
 from datetime import *
 
-
-# Some useful constants
-CONFIG_FILE = '/home/falcons/mediadisplay.cfg'
-DATE_FMT = '%Y-%m-%d'
+from pygame.locals import *
 
 
 class MediaPlayer:
     """
-    Initializes frame buffer and provides methods to show photos,
+    Initializes full-screen display and provides methods to show photos,
     videos, and announcements.
     """
     def __init__(self):
-        # Assume we're using fbcon on Raspberry Pi
-        os.putenv('SDL_VIDEODRIVER', 'fbcon')
 
-        try:
-            pygame.display.init()
-            pygame.font.init()
-        except:
-            print('Unable to initialize frame buffer!')
-            sys.exit()
+        pygame.init()
 
         # This will be used later for photo scaling
         self.screen_height = pygame.display.Info().current_h
@@ -82,8 +68,8 @@ class MediaPlayer:
 
         self.screen = pygame.display.set_mode(
                 (self.screen_width, self.screen_height),
-                flags=pygame.FULLSCREEN)
-        self.screen.fill([0, 0, 0])
+                FULLSCREEN)
+        self.screen.fill(Color('black'))
 
         # This hides the mouse pointer which is unwanted in this application
         pygame.mouse.set_visible(False)
@@ -125,12 +111,12 @@ class MediaPlayer:
             # 32-bit images. If this is not a 24-bit or 32-bit image,
             # use transform.scale() instead which will be ugly
             # but at least will work
-            if img_bitsize == 24 or img_bitsize == 32:
+            if img_bitsize in [24, 32]:
                 img = pygame.transform.smoothscale(
-                        img, [scaled_width, scaled_height])
+                        img, (scaled_width, scaled_height))
             else:
                 img = pygame.transform.scale(
-                        img, [scaled_width, scaled_height])
+                        img, (scaled_width, scaled_height))
 
             # Determine where to place the image so it will appear
             # centered on the screen
@@ -143,8 +129,8 @@ class MediaPlayer:
 
         # Blank screen before showing photo in case it
         # doesn't fill the whole screen
-        self.screen.fill([0, 0, 0])
-        self.screen.blit(img, [display_x, display_y])
+        self.screen.fill(Color('black'))
+        self.screen.blit(img, (display_x, display_y))
         pygame.display.update()
 
 
@@ -156,7 +142,7 @@ class MediaPlayer:
         # Videos will not be scaled - this needs to be done during transcoding
         # Blank screen before showing video in case it doesn't fill the whole
         # screen
-        self.screen.fill([0, 0, 0])
+        self.screen.fill(Color('black'))
         pygame.display.update()
         subprocess.call(
                 ['/usr/bin/omxplayer', '-o', 'hdmi', filename], shell=False)
@@ -201,7 +187,7 @@ class MediaPlayer:
             current_y = 0
 
         # Blank screen
-        self.screen.fill([0, 0, 0])
+        self.screen.fill(Color('black'))
         pygame.display.update()
 
         # Render each line of text
@@ -265,25 +251,29 @@ def fixpath(path_name):
 
 
 def main():
-    # Parse config information
-    config = configparser.ConfigParser()
-    config.read_file(open(CONFIG_FILE))
+    if len(sys.argv) > 1:
+        config_file_name = sys.argv[1]
+    else:
+        config_file_name = 'config.json'
 
-    PHOTO_PATH = config.get('photos', 'path')
-    PHOTO_FILES = [item.strip()
-            for item in config.get('photos', 'files').split(',')]
-    PHOTO_TIME = config.getint('photos', 'time')
+    with open(config_file_name, 'r') as f:
+        config = json.load(f)
 
-    VIDEO_PATH = config.get('videos', 'path')
-    VIDEO_FILES = [item.strip()
-            for item in config.get('videos', 'files').split(',')]
-    VIDEO_PROBABILITY = config.getfloat('videos', 'probability')
+    DATE_FMT = config['date_fmt']
 
-    ANNOUNCEMENT_FILE = config.get('announcements', 'file')
-    ANNOUNCEMENT_FONT = config.get('announcements', 'font')
-    ANNOUNCEMENT_TIME = config.getint('announcements', 'time')
-    ANNOUNCEMENT_PROBABILITY = config.getfloat('announcements', 'probability')
-    ANNOUNCEMENT_LINE_SPACING = config.getint('announcements', 'spacing')
+    PHOTO_PATH = config['photos']['path']
+    PHOTO_FILES = [item.strip() for item in config['photos']['files']]
+    PHOTO_TIME = config['photos']['time']
+
+    VIDEO_PATH = config['videos']['path']
+    VIDEO_FILES = [item.strip() for item in config['videos']['files']]
+    VIDEO_PROBABILITY = config['videos']['probability']
+
+    ANNOUNCEMENT_FILE = config['announcements']['file']
+    ANNOUNCEMENT_FONT = config['announcements']['font']
+    ANNOUNCEMENT_TIME = config['announcements']['time']
+    ANNOUNCEMENT_PROBABILITY = config['announcements']['probability']
+    ANNOUNCEMENT_LINE_SPACING = config['announcements']['spacing']
 
     # Make sure paths end with slashes
     PHOTO_PATH = fixpath(PHOTO_PATH)
@@ -304,17 +294,16 @@ def main():
         # Get current datetime
         current_date = datetime.today().date()
 
-        # TODO: Wrap this in a try/catch block
-        ann_tree = ET.parse(ANNOUNCEMENT_FILE)
-        ann_root = ann_tree.getroot()
+        with open(ANNOUNCEMENT_FILE, 'r') as f:
+            announcement_data = json.load(f)
 
-        # Iterate through all "announcement" elements
-        for item in ann_root.iter('announcement'):
+        # Iterate through all root elements
+        for item in announcement_data:
             # Get start date and end date for announcement
             ann_start_date = datetime.strptime(
-                        item.get('startdate'), DATE_FMT).date()
+                        item['start_date'], DATE_FMT).date()
             ann_end_date = datetime.strptime(
-                        item.get('enddate'), DATE_FMT).date()
+                        item['end_date'], DATE_FMT).date()
 
             # Only show announcements that are within the specified date range
             if ann_start_date <= current_date and ann_end_date >= current_date:
@@ -322,23 +311,17 @@ def main():
                 ann_temp = []
 
                 # Iterate through all "line" elements
-                for line in item.iter('line'):
-                    # Elements with no text represent blank vertical spaces
-                    if not line.text:
+                for line in item['lines']:
+                    # "hspace" elements represent blank vertical spaces
+                    if 'hspace' in line:
                         ann_temp.append(
-                                ["", int(line.get('size')), (0, 0, 0), False])
+                                ["", line['hspace'], (0, 0, 0), False])
                     else:
-                        # Check to see if line should be centered
-                        if int(line.get('center')) == 1:
-                            center = True
-                        else:
-                            center = False
-
                         # Append each line to the list that represents
                         # the announcement
                         ann_temp.append(
-                                [line.text, int(line.get('size')),
-                                hex_to_rgb(line.get('color')), center])
+                                [line['text'], line['size'],
+                                hex_to_rgb(line['color']), line['center']])
 
                 # Append each complete announcement to the master list
                 # of announcements

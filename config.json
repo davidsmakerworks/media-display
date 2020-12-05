@@ -1,0 +1,20 @@
+{
+    "photos": {
+        "path": "photos/",
+        "files": [ "*.jpg" ],
+        "time": 10
+    },
+    "videos": {
+        "path": "videos/",
+        "files": [ "*.f4v", "*.mov", "*.mp4" ],
+        "probability": 0.1
+    },
+    "announcements": {
+        "file": "announcements.json",
+        "font": "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "time": 15,
+        "probability": 0.1,
+        "spacing": 10
+    },
+    "date_fmt": "%Y-%m-%d"
+}
