@@ -34,7 +34,7 @@ github.com/davidsmakerworks/media-display
 
 TODO: General cleanup
 
-TODO: Research native video playback without using omxplayer
+TODO: Eliminate wildcard imports
 
 TODO: Implement graceful shutdown
 
@@ -52,6 +52,43 @@ from datetime import *
 
 from pygame.locals import *
 
+class AnnouncementLine:
+    """
+    Class representing one line of an announcement after it has
+    been parsed from JSON file
+
+    Properties:
+    text -- text of the line, or None if it is a blank line
+    size -- size of text or height of the blank line
+    color -- text color as a tuple of (red, green, blue)
+    center -- determines if line should be centered on the screen
+    """
+    def __init__(self, text=None, size=0, color=None, center=False):
+        self.text = text
+        self.size = size
+        self.color = color
+        self.center = center
+
+
+class Announcement:
+    """
+    Class representing an announcement after it has been parsed from the
+    JSON file.
+
+    Properties:
+    start_date -- earliest date to show announcement
+    end_date -- latest date to show announcement
+    lines -- list of AnnouncementLine objects representing the individual
+        lines of the announcement
+    """
+    def __init__(self, start_date, end_date, lines=None):
+        self.start_date = start_date
+        self.end_date = end_date
+        
+        if lines:
+            self.lines = lines
+        else:
+            self.lines = []
 
 class MediaPlayer:
     """
@@ -156,8 +193,7 @@ class MediaPlayer:
         Show a text announcement on the screen.
 
         Parameters:
-        announcement -- a list of display lines in the format:
-                        ['text', size, (R,G,B), center]
+        announcement -- an instance of the Announcement class
         text_font -- name of the font file to use for rendering
         line_spacing -- space in pixels to place between each line
         """
@@ -165,12 +201,12 @@ class MediaPlayer:
         # Pre-calculate total height of message for centering
         total_height = 0
 
-        for line in announcement:
-            text = line[0]
-            size = line[1]
+        for line in announcement.lines:
+            text = line.text
+            size = line.size
 
             # Only count lines with text to be rendered
-            if text.strip:
+            if text:
                 fnt = pygame.font.Font(text_font, size)
 
                 # Calculate size of text to be rendered
@@ -191,14 +227,14 @@ class MediaPlayer:
         pygame.display.update()
 
         # Render each line of text
-        for line in announcement:
-            text = line[0]
-            size = line[1]
-            color = line[2]
-            center = line[3]
+        for line in announcement.lines:
+            text = line.text
+            size = line.size
+            color = line.color
+            center = line.center
 
             # Only render text if there is text to be rendered
-            if text.strip() != "":
+            if text:
                 # Create Font object of given size
                 fnt = pygame.font.Font(text_font, size)
 
@@ -307,21 +343,22 @@ def main():
 
             # Only show announcements that are within the specified date range
             if ann_start_date <= current_date and ann_end_date >= current_date:
-                # Each announcement is a separate list of lines
-                ann_temp = []
-
+                ann_temp = Announcement(ann_start_date, ann_end_date)
                 # Iterate through all "line" elements
                 for line in item['lines']:
                     # "hspace" elements represent blank vertical spaces
                     if 'hspace' in line:
-                        ann_temp.append(
-                                ["", line['hspace'], (0, 0, 0), False])
+                        ann_temp.lines.append(
+                                AnnouncementLine(
+                                        "", line['hspace'], (0, 0, 0), False))
                     else:
                         # Append each line to the list that represents
-                        # the announcement
-                        ann_temp.append(
-                                [line['text'], line['size'],
-                                hex_to_rgb(line['color']), line['center']])
+                        # the lines of the announcement
+                        ann_temp.lines.append(
+                                AnnouncementLine(
+                                        line['text'], line['size'],
+                                        hex_to_rgb(line['color']),
+                                        line['center']))
 
                 # Append each complete announcement to the master list
                 # of announcements
@@ -339,8 +376,6 @@ def main():
             videos = videos + glob.glob(VIDEO_PATH + wildcard.upper())
             videos = videos + glob.glob(VIDEO_PATH + wildcard.lower())
 
-        current_photo = 0
-
         # Display photos in alphabetical order by filename
         photos.sort()
 
@@ -348,10 +383,9 @@ def main():
         # contents of the folder will be reparsed each time all of the photos
         # are displayed, so this provides an opportunity to add/change the
         # contents without restarting the script.
-        while current_photo < len(photos):
-            player.show_image(photos[current_photo])
+        for photo in photos:
+            player.show_image(photo)
             tm.sleep(PHOTO_TIME)
-            current_photo = current_photo + 1
 
             # Display announcements based on the specified probability.
             # Check to be sure we have any announcements to display before
