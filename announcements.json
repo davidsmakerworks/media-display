@@ -6,7 +6,7 @@
             {
                 "text": "SAMPLE ANNOUNCEMENT",
                 "size": 120,
-                "color": "#ffffff",
+                "color": "white",
                 "center": true
             },
             {
@@ -15,19 +15,19 @@
             {
                 "text": "Name of Event",
                 "size": 90,
-                "color": "#ffff00",
+                "color": "yellow",
                 "center": true
             },
             {
                 "text": "Event Date",
                 "size": 90,
-                "color": "#ffff00",
+                "color": "yellow",
                 "center": true
             },
             {
                 "text": "Event Time",
                 "size": 90,
-                "color": "#ffff00",
+                "color": "yellow",
                 "center": true
             },
             {
@@ -37,7 +37,7 @@
             {
                 "text": "More event details",
                 "size": 75,
-                "color": "#ffffff",
+                "color": "white",
                 "center": true
             }
         ]
@@ -49,7 +49,7 @@
             {
                 "text": "SECOND ANNOUNCEMENT",
                 "size": 120,
-                "color": "#ffffff",
+                "color": "white",
                 "center": true
             },
             {
@@ -58,19 +58,19 @@
             {
                 "text": "Another Event",
                 "size": 90,
-                "color": "#ffff00",
+                "color": "yellow",
                 "center": true
             },
             {
                 "text": "Another Date",
                 "size": 90,
-                "color": "#ffff00",
+                "color": "yellow",
                 "center": true
             },
             {
                 "text": "Another Time",
                 "size": 90,
-                "color": "#ffff00",
+                "color": "yellow",
                 "center": true
             },
             {
@@ -80,7 +80,7 @@
             {
                 "text": "Other event details",
                 "size": 75,
-                "color": "#ffffff",
+                "color": "white",
                 "center": true
             }
         ]

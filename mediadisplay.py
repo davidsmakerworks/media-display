@@ -30,27 +30,29 @@ Designed to run on Raspberry Pi 3 or Raspberry Pi 4
 
 Requires PyGame with Python 3 (tested on Python 3.7.3)
 
-github.com/davidsmakerworks/media-display
+https://github.com/davidsmakerworks/media-display
 
 TODO: General cleanup
 
-TODO: Eliminate wildcard imports
+TODO: Move announcement parsing to Announcement class
+
+TODO: Better format to store announcements(?)
 
 TODO: Implement graceful shutdown
 
 """
 
-import sys
-import pygame
-import time as tm # Avoid conflict with datetime.time class
-import subprocess
-import random
+import datetime
 import glob
 import json
+import os
+import random
+import subprocess
+import sys
+import time
 
-from datetime import *
+import pygame
 
-from pygame.locals import *
 
 class AnnouncementLine:
     """
@@ -90,13 +92,13 @@ class Announcement:
         else:
             self.lines = []
 
+
 class MediaPlayer:
     """
     Initializes full-screen display and provides methods to show photos,
     videos, and announcements.
     """
     def __init__(self):
-
         pygame.init()
 
         # This will be used later for photo scaling
@@ -105,13 +107,12 @@ class MediaPlayer:
 
         self.screen = pygame.display.set_mode(
                 (self.screen_width, self.screen_height),
-                FULLSCREEN)
-        self.screen.fill(Color('black'))
+                pygame.FULLSCREEN)
+        self.screen.fill(pygame.Color('black'))
 
         # This hides the mouse pointer which is unwanted in this application
         pygame.mouse.set_visible(False)
         pygame.display.update()
-
 
     def show_image(self, filename):
         """
@@ -166,10 +167,9 @@ class MediaPlayer:
 
         # Blank screen before showing photo in case it
         # doesn't fill the whole screen
-        self.screen.fill(Color('black'))
+        self.screen.fill(pygame.Color('black'))
         self.screen.blit(img, (display_x, display_y))
         pygame.display.update()
-
 
     def show_video(self, filename):
         """
@@ -179,14 +179,13 @@ class MediaPlayer:
         # Videos will not be scaled - this needs to be done during transcoding
         # Blank screen before showing video in case it doesn't fill the whole
         # screen
-        self.screen.fill(Color('black'))
+        self.screen.fill(pygame.Color('black'))
         pygame.display.update()
         subprocess.call(
                 ['/usr/bin/omxplayer', '-o', 'hdmi', filename], shell=False)
         # This might not be necessary, but it's there in case any stray copies
         # of omxplayer.bin are somehow left running
         subprocess.call(['/usr/bin/killall', 'omxplayer.bin'], shell=False)
-
 
     def show_announcement(self, announcement, text_font, line_spacing):
         """
@@ -223,7 +222,7 @@ class MediaPlayer:
             current_y = 0
 
         # Blank screen
-        self.screen.fill(Color('black'))
+        self.screen.fill(pygame.Color('black'))
         pygame.display.update()
 
         # Render each line of text
@@ -265,27 +264,6 @@ class MediaPlayer:
         pygame.display.update()
 
 
-def hex_to_rgb(value):
-    """
-    Utility function to translate hex color values into tuples
-    From http://stackoverflow.com/a/214657/3787376
-    """
-    value = value.lstrip('#')
-    lv = len(value)
-    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
-
-
-def fixpath(path_name):
-    """
-    Utility function to ensure path names are in the format needed for use
-    with glob
-    """
-    if not path_name.endswith('/'):
-        path_name = path_name + '/'
-
-    return path_name
-
-
 def main():
     if len(sys.argv) > 1:
         config_file_name = sys.argv[1]
@@ -295,25 +273,21 @@ def main():
     with open(config_file_name, 'r') as f:
         config = json.load(f)
 
-    DATE_FMT = config['date_fmt']
+    date_fmt = config['date_fmt']
 
-    PHOTO_PATH = config['photos']['path']
-    PHOTO_FILES = [item.strip() for item in config['photos']['files']]
-    PHOTO_TIME = config['photos']['time']
+    photo_path = config['photos']['path']
+    photo_files = [item.strip() for item in config['photos']['files']]
+    photo_time = config['photos']['time']
 
-    VIDEO_PATH = config['videos']['path']
-    VIDEO_FILES = [item.strip() for item in config['videos']['files']]
-    VIDEO_PROBABILITY = config['videos']['probability']
+    video_path = config['videos']['path']
+    video_files = [item.strip() for item in config['videos']['files']]
+    video_probability = config['videos']['probability']
 
-    ANNOUNCEMENT_FILE = config['announcements']['file']
-    ANNOUNCEMENT_FONT = config['announcements']['font']
-    ANNOUNCEMENT_TIME = config['announcements']['time']
-    ANNOUNCEMENT_PROBABILITY = config['announcements']['probability']
-    ANNOUNCEMENT_LINE_SPACING = config['announcements']['spacing']
-
-    # Make sure paths end with slashes
-    PHOTO_PATH = fixpath(PHOTO_PATH)
-    VIDEO_PATH = fixpath(VIDEO_PATH)
+    announcement_file = config['announcements']['file']
+    announcement_font = config['announcements']['font']
+    announcement_time = config['announcements']['time']
+    announcement_probability = config['announcements']['probability']
+    announcement_line_spacing = config['announcements']['spacing']
 
     # Create an instance of the MediaPlayer class
     player = MediaPlayer()
@@ -330,16 +304,16 @@ def main():
         # Get current datetime
         current_date = datetime.today().date()
 
-        with open(ANNOUNCEMENT_FILE, 'r') as f:
+        with open(announcement_file, 'r') as f:
             announcement_data = json.load(f)
 
         # Iterate through all root elements
         for item in announcement_data:
             # Get start date and end date for announcement
             ann_start_date = datetime.strptime(
-                        item['start_date'], DATE_FMT).date()
+                        item['start_date'], date_fmt).date()
             ann_end_date = datetime.strptime(
-                        item['end_date'], DATE_FMT).date()
+                        item['end_date'], date_fmt).date()
 
             # Only show announcements that are within the specified date range
             if ann_start_date <= current_date and ann_end_date >= current_date:
@@ -357,7 +331,7 @@ def main():
                         ann_temp.lines.append(
                                 AnnouncementLine(
                                         line['text'], line['size'],
-                                        hex_to_rgb(line['color']),
+                                        pygame.Color(line['color']),
                                         line['center']))
 
                 # Append each complete announcement to the master list
@@ -366,15 +340,15 @@ def main():
 
         # Find all photos in designated folder based on the list of extensions.
         # Allow for both uppercase and lowercase extensions, but not mixed case
-        for wildcard in PHOTO_FILES:
-            photos = photos + glob.glob(PHOTO_PATH + wildcard.upper())
-            photos = photos + glob.glob(PHOTO_PATH + wildcard.lower())
+        for wildcard in photo_files:
+            photos.extend(glob.glob(os.path.join(photo_path, wildcard.upper())))
+            photos.extend(glob.glob(os.path.join(photo_path, wildcard.lower())))
 
         # Find all videos in designated folder based on the list of extensions.
         # Allow for both uppercase and lowercase extensions, but not mixed case
-        for wildcard in VIDEO_FILES:
-            videos = videos + glob.glob(VIDEO_PATH + wildcard.upper())
-            videos = videos + glob.glob(VIDEO_PATH + wildcard.lower())
+        for wildcard in video_files:
+            videos.extend(glob.glob(os.path.join(video_path, wildcard.upper())))
+            videos.extend(glob.glob(os.path.join(video_path, wildcard.lower())))
 
         # Display photos in alphabetical order by filename
         photos.sort()
@@ -385,22 +359,23 @@ def main():
         # contents without restarting the script.
         for photo in photos:
             player.show_image(photo)
-            tm.sleep(PHOTO_TIME)
+            time.sleep(photo_time)
 
             # Display announcements based on the specified probability.
             # Check to be sure we have any announcements to display before
             # we try to display one.
-            if random.random() <= ANNOUNCEMENT_PROBABILITY and announcements:
+            if random.random() <= announcement_probability and announcements:
                 player.show_announcement(
                     random.choice(announcements),
-                    ANNOUNCEMENT_FONT, ANNOUNCEMENT_LINE_SPACING)
-                tm.sleep(ANNOUNCEMENT_TIME)
+                    announcement_font, announcement_line_spacing)
+                time.sleep(announcement_time)
 
             # Play videos based on the specified probability.
             # Check to be sure we have any videos to play before we try
             # to play one.
-            if random.random() <= VIDEO_PROBABILITY and videos:
+            if random.random() <= video_probability and videos:
                 player.show_video(random.choice(videos))
+
 
 if __name__ == '__main__':
     main()
