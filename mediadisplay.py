@@ -42,6 +42,7 @@ TODO: Implement graceful shutdown
 
 """
 
+
 import datetime
 import glob
 import json
@@ -62,7 +63,7 @@ class AnnouncementLine:
     Properties:
     text -- text of the line, or None if it is a blank line
     size -- size of text or height of the blank line
-    color -- text color as a tuple of (red, green, blue)
+    color -- text color as a PyGame color object
     center -- determines if line should be centered on the screen
     """
     def __init__(self, text=None, size=0, color=None, center=False):
@@ -243,7 +244,7 @@ class MediaPlayer:
                     disp_x = (self.screen_width - line_width) / 2
                 else:
                     # TODO: allow for arbitrary X position to be specified in
-                    # XML file
+                    # announcements file
                     disp_x = 0 
 
                 disp_y = current_y
