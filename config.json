@@ -1,4 +1,10 @@
 {
+    "display": {
+        "width": 1920,
+        "height": 1080,
+        "fullscreen": true,
+        "surface_only": false
+    },
     "photos": {
         "path": "photos/",
         "files": [ "*.jpg" ],
