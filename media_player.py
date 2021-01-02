@@ -50,9 +50,12 @@ import random
 import subprocess
 import time
 
-from typing import List, Optional
+from typing import Optional
 
 import pygame
+
+# Wildcard import used here based on standard pygame code style
+from pygame.locals import *
 
 from announcement import Announcement, AnnouncementLine
 from button import Button
@@ -259,6 +262,18 @@ class MediaPlayer:
         if self._surface_is_display:
             pygame.display.update()
     
+    def _check_for_quit(self) -> bool:
+        """Temporary workaround until main loop is made non-blocking."""
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == K_ESCAPE:
+                    return True
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == Button.BTN_START:
+                    return True
+
+        return False
+
     def run(self) -> bool:
         while True:
             # Create 2 empty lists for photo and video filenames
@@ -333,15 +348,16 @@ class MediaPlayer:
             # are displayed, so this provides an opportunity to add/change the
             # contents without restarting the script.
             for photo in photos:
-                for event in pygame.event.get():
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESC:
-                            return False
-                    elif event.type == pygame.JOYBUTTONDOWN:
-                        if event.button == Button.BTN_START:
-                            return False
+                # Check to see if user has requested to quit
+                if self._check_for_quit():
+                    return False
+
                 self._show_image(photo)
                 time.sleep(self._photo_time)
+
+                # Check to see if user has requested to quit
+                if self._check_for_quit():
+                    return False
 
                 # Display announcements based on the specified probability.
                 # Check to be sure we have any announcements to display before
@@ -353,6 +369,10 @@ class MediaPlayer:
                         self._announcement_font,
                         self._announcement_line_spacing)
                     time.sleep(self._announcement_time)
+
+                # Check to see if user has requested to quit
+                if self._check_for_quit():
+                    return False
 
                 # Play videos based on the specified probability.
                 # Check to be sure we have any videos to play before we try
