@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2020 David Rice
+# Copyright (c) 2021 David Rice
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -50,8 +50,6 @@ import random
 import subprocess
 import time
 
-from typing import Optional
-
 import pygame
 
 # Wildcard import used here based on standard pygame code style
@@ -68,7 +66,7 @@ class MediaPlayer:
     """
     def __init__(
             self, surface: pygame.Surface, config: dict,
-            surface_is_display: Optional[bool] = True) -> None:
+            surface_is_display: bool = True) -> None:
         self._surface = surface
         self._config = config
         self._surface_is_display = surface_is_display
