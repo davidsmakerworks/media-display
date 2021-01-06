@@ -155,10 +155,13 @@ class MediaPlayer:
         if self._surface_is_display:
             pygame.display.update()
 
-    def _show_video(self, filename: str) -> None:
+    def _show_video(self, filename: str) -> bool:
         """
         Play a video from the specified file using the external omxplayer
         utility.
+
+        Returns True if video played to completion and False if user requested
+        to quit during video playback.
         """
         # Videos will not be scaled - this needs to be done during transcoding
         # Blank screen before showing video in case it doesn't fill the whole
@@ -181,7 +184,9 @@ class MediaPlayer:
                 # Kill the running video process and return to caller
                 subprocess.run(
                     ['/usr/bin/killall', 'omxplayer.bin'], shell=False)
-                return
+                
+                # Video was interrupted
+                return False
             
             # Sleep to avoid running CPU at 100%
             time.sleep(0.5)
@@ -189,6 +194,9 @@ class MediaPlayer:
         # This might not be necessary, but it's there in case any stray copies
         # of omxplayer.bin are somehow left running
         subprocess.run(['/usr/bin/killall', 'omxplayer.bin'], shell=False)
+
+        # Video played to completion
+        return True
 
     def _show_announcement(
             self, announcement: Announcement,
@@ -275,7 +283,6 @@ class MediaPlayer:
             pygame.display.update()
     
     def _check_for_quit(self) -> bool:
-        """Temporary workaround until main loop is made non-blocking."""
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
@@ -356,9 +363,9 @@ class MediaPlayer:
             photos.sort()
 
             # Loop through all photos and insert videos at random. Note that the
-            # contents of the folder will be reparsed each time all of the photos
-            # are displayed, so this provides an opportunity to add/change the
-            # contents without restarting the script.
+            # contents of the folder will be reparsed each time all of the
+            # photos are displayed, so this provides an opportunity to
+            # add/change the contents without restarting the script.
             for photo in photos:
                 # Check to see if user has requested to quit
                 if self._check_for_quit():
@@ -405,7 +412,10 @@ class MediaPlayer:
                 # to play one.
                 if (random.random() <= self._video_probability
                         and videos):
-                    self._show_video(random.choice(videos))
+                    if not self._show_video(random.choice(videos)):
+                        # _show_video() returns False if user requested to
+                        # quit during video playback
+                        return False
             
             return True
 
