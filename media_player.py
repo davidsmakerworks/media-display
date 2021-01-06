@@ -37,8 +37,6 @@ TODO: General cleanup
 TODO: Move announcement parsing to Announcement class
 
 TODO: Better format to store announcements(?)
-
-TODO: Make display routines non-blocking for faster response to quit command
 """
 
 
@@ -170,11 +168,27 @@ class MediaPlayer:
         if self._surface_is_display:
             pygame.display.update()
 
-        subprocess.call(
+        proc = subprocess.Popen(
                 ['/usr/bin/omxplayer', '-o', 'hdmi', filename], shell=False)
+
+        # Wait for video player process to exit
+        while not proc.poll():
+            # Check to see if user has requested to quit
+            if self._check_for_quit():
+                # Kill the omxplayer wrapper script
+                proc.kill()
+
+                # Kill the running video process and return to caller
+                subprocess.run(
+                    ['/usr/bin/killall', 'omxplayer.bin'], shell=False)
+                return
+            
+            # Sleep to avoid running CPU at 100%
+            time.sleep(0.5)
+            
         # This might not be necessary, but it's there in case any stray copies
         # of omxplayer.bin are somehow left running
-        subprocess.call(['/usr/bin/killall', 'omxplayer.bin'], shell=False)
+        subprocess.run(['/usr/bin/killall', 'omxplayer.bin'], shell=False)
 
     def _show_announcement(
             self, announcement: Announcement,
@@ -351,11 +365,16 @@ class MediaPlayer:
                     return False
 
                 self._show_image(photo)
-                time.sleep(self._photo_time)
 
-                # Check to see if user has requested to quit
-                if self._check_for_quit():
-                    return False
+                next_time = time.time() + self._photo_time
+                
+                while time.time() < next_time:
+                    # Check to see if user has requested to quit
+                    if self._check_for_quit():
+                        return False
+                    
+                    # Sleep to avoid running CPU at 100%
+                    time.sleep(0.5)
 
                 # Display announcements based on the specified probability.
                 # Check to be sure we have any announcements to display before
@@ -366,7 +385,16 @@ class MediaPlayer:
                         random.choice(announcements),
                         self._announcement_font,
                         self._announcement_line_spacing)
-                    time.sleep(self._announcement_time)
+
+                    next_time = time.time() + self._announcement_time
+
+                    while time.time() < next_time:
+                        # Check to see if user has requested to quit
+                        if self._check_for_quit():
+                            return False
+                        
+                        # Sleep to avoid running CPU at 100%
+                        time.sleep(0.5)
 
                 # Check to see if user has requested to quit
                 if self._check_for_quit():
