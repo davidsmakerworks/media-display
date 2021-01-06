@@ -174,8 +174,9 @@ class MediaPlayer:
         proc = subprocess.Popen(
                 ['/usr/bin/omxplayer', '-o', 'hdmi', filename], shell=False)
 
-        # Wait for video player process to exit
-        while not proc.poll():
+        # Wait for video player process to exit - explicit comparison with None
+        # is required to account for when the process returns 0 on completion
+        while proc.poll() is None:
             # Check to see if user has requested to quit
             if self._check_for_quit():
                 # Kill the omxplayer wrapper script
