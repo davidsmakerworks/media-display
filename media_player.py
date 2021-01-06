@@ -373,9 +373,9 @@ class MediaPlayer:
 
                 self._show_image(photo)
 
-                next_time = time.time() + self._photo_time
+                next_time = time.monotonic() + self._photo_time
                 
-                while time.time() < next_time:
+                while time.monotonic() < next_time:
                     # Check to see if user has requested to quit
                     if self._check_for_quit():
                         return False
@@ -393,9 +393,9 @@ class MediaPlayer:
                         self._announcement_font,
                         self._announcement_line_spacing)
 
-                    next_time = time.time() + self._announcement_time
+                    next_time = time.monotonic() + self._announcement_time
 
-                    while time.time() < next_time:
+                    while time.monotonic() < next_time:
                         # Check to see if user has requested to quit
                         if self._check_for_quit():
                             return False
