@@ -118,8 +118,8 @@ class MediaPlayer:
 
             # If the scaled image is going to be taller than the screen,
             # then limit the maximum height and scale the width instead
-            if scaled_height > self.screen_height:
-                scaled_height = self.screen_height
+            if scaled_height > self._height:
+                scaled_height = self._height
                 scaled_width = int(
                     (float(self._height) / img_height) * img_width)
             else:
