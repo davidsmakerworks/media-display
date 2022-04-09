@@ -49,6 +49,7 @@ import subprocess
 import time
 
 import pygame
+import pymongo
 
 # Wildcard import used here based on standard pygame code style
 from pygame.locals import *
@@ -83,7 +84,15 @@ class MediaPlayer:
         self._video_files = [item.strip() for item in config['videos']['files']]
         self._video_probability = config['videos']['probability']
 
-        self._announcement_file = config['announcements']['file']
+        if config['announcements']['source'].lower() == 'mongodb':
+            self._use_mongo_db = True
+            self._mongo_db_conn_string = os.environ[config['announcements']['db_conn_string']]
+            self._mongo_db_name = os.environ[config['announcements']['db_name']]
+            self._mongo_db_collection = os.environ[config['announcements']['db_collection']]
+        else:
+            self._use_mongo_db = False
+            self._announcement_file = config['announcements']['file']
+
         self._announcement_font = config['announcements']['font']
         self._announcement_time = config['announcements']['time']
         self._announcement_probability = config['announcements']['probability']
@@ -306,8 +315,15 @@ class MediaPlayer:
             # Get current datetime
             current_date = datetime.datetime.today().date()
 
-            with open(self._announcement_file, 'r') as f:
-                announcement_data = json.load(f)
+            if self._use_mongo_db:
+                with pymongo.MongoClient(self._mongo_db_conn_string) as mongo_client:
+                    db = mongo_client[self._mongo_db_name]
+                    coll = db[self._mongo_db_collection]
+
+                    announcement_data = list(coll.find())
+            else:
+                with open(self._announcement_file, 'r') as f:
+                    announcement_data = json.load(f)
 
             # Iterate through all root elements
             for item in announcement_data:

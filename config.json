@@ -16,7 +16,11 @@
         "probability": 0.1
     },
     "announcements": {
+        "source": "mongodb",
         "file": "announcements.json",
+        "db_conn_string": "MONGO_DB_CONN_STRING",
+        "db_name": "MONGO_DB_DATABASE",
+        "db_collection": "MONGO_DB_COLLECTION",
         "font": "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
         "time": 15,
         "probability": 0.1,
