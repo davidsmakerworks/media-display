@@ -309,19 +309,26 @@ class MediaPlayer:
             photos = []
             videos = []
 
-            # Create empty list for annoucement data
+            # Create empty lists for annoucement data
             announcements = []
+            announcement_data = []
 
             # Get current datetime
             current_date = datetime.datetime.today().date()
 
             if self._use_mongo_db:
-                with pymongo.MongoClient(self._mongo_db_conn_string) as mongo_client:
-                    db = mongo_client[self._mongo_db_name]
-                    coll = db[self._mongo_db_collection]
+                try:
+                    with pymongo.MongoClient(self._mongo_db_conn_string) as mongo_client:
+                        db = mongo_client[self._mongo_db_name]
+                        coll = db[self._mongo_db_collection]
 
-                    announcement_data = list(coll.find())
-            else:
+                        announcement_data = list(coll.find())
+
+                        mongo_success = True
+                except Exception:
+                    mongo_success = False
+            
+            if not self._use_mongo_db or not mongo_success:
                 with open(self._announcement_file, 'r') as f:
                     announcement_data = json.load(f)
 
