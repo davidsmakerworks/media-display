@@ -327,6 +327,15 @@ class MediaPlayer:
                         mongo_success = True
                 except Exception:
                     mongo_success = False
+
+                # Save latest data from MongoDB in case connection goes down
+                # TODO: Only write file if data is changed
+                
+                try:
+                    with open(self._announcement_file, 'w', encoding='utf-8') as f:
+                        print(json.dumps(announcement_data, default=str), file=f)
+                except Exception as err:
+                    pass
             
             if not self._use_mongo_db or not mongo_success:
                 with open(self._announcement_file, 'r') as f:
